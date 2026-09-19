@@ -1,0 +1,178 @@
+using System;
+using System.Collections.Generic;
+
+namespace Hollow.Core
+{
+    public enum Rarity { Common = 0, Uncommon = 1, Rare = 2, Epic = 3, Legendary = 4 }
+    public enum ItemSlot { Weapon = 0, Armor = 1, Trinket = 2 }
+
+    /// <summary>A piece of gear. Public fields so it can be serialized with JsonUtility for saves.</summary>
+    [Serializable]
+    public sealed class Item
+    {
+        public string Name;
+        public ItemSlot Slot;
+        public Rarity Rarity;
+        public int ItemLevel;
+        public int Attack;
+        public int Defense;
+        public int MaxHp;
+        public float Crit;   // additive crit chance, e.g. 0.03 = +3%
+
+        /// <summary>Rough power value used to compare two items.</summary>
+        public float Score
+        {
+            get { return Attack * 1.0f + Defense * 1.2f + MaxHp * 0.2f + Crit * 300f; }
+        }
+    }
+
+    public static class LootGenerator
+    {
+        static readonly float[] RarityMult = { 1.0f, 1.25f, 1.6f, 2.1f, 3.0f };
+
+        static readonly string[] WeaponNames = { "Iron Blade", "Steel Saber", "Moonlit Rapier", "Runic Longsword", "Wind Cutter" };
+        static readonly string[] ArmorNames = { "Leather Coat", "Chain Mail", "Knight's Plate", "Warden Cloak", "Scale Vest" };
+        static readonly string[] TrinketNames = { "Copper Ring", "Silver Amulet", "Lucky Charm", "Ember Pendant", "Spire Sigil" };
+
+        static readonly string[][] Prefixes =
+        {
+            new[] { "Worn", "Plain", "Simple" },
+            new[] { "Sturdy", "Fine", "Tempered" },
+            new[] { "Runed", "Gleaming", "Honed" },
+            new[] { "Astral", "Warden's", "Radiant" },
+            new[] { "Mythic", "Spire-forged", "Sovereign" },
+        };
+
+        public static float Multiplier(Rarity r) { return RarityMult[(int)r]; }
+
+        public static bool ShouldDrop(Random rng, bool boss)
+        {
+            return boss || rng.NextDouble() < 0.30;
+        }
+
+        /// <summary>Normal enemies mostly drop commons; bosses always drop Rare or better.</summary>
+        public static Rarity RollRarity(Random rng, bool boss)
+        {
+            double r = rng.NextDouble();
+            if (boss)
+            {
+                if (r < 0.60) return Rarity.Rare;
+                if (r < 0.92) return Rarity.Epic;
+                return Rarity.Legendary;
+            }
+            if (r < 0.60) return Rarity.Common;
+            if (r < 0.88) return Rarity.Uncommon;
+            if (r < 0.97) return Rarity.Rare;
+            if (r < 0.995) return Rarity.Epic;
+            return Rarity.Legendary;
+        }
+
+        public static ItemSlot RollSlot(Random rng)
+        {
+            double r = rng.NextDouble();
+            if (r < 0.40) return ItemSlot.Weapon;
+            if (r < 0.75) return ItemSlot.Armor;
+            return ItemSlot.Trinket;
+        }
+
+        public static Item Roll(Random rng, int floor, bool boss)
+        {
+            return RollOf(rng, floor, RollSlot(rng), RollRarity(rng, boss));
+        }
+
+        public static Item RollOf(Random rng, int floor, ItemSlot slot, Rarity rarity)
+        {
+            floor = Math.Max(1, floor);
+            float mult = RarityMult[(int)rarity];
+            var item = new Item { Slot = slot, Rarity = rarity, ItemLevel = floor };
+
+            string[] bases = slot == ItemSlot.Weapon ? WeaponNames : slot == ItemSlot.Armor ? ArmorNames : TrinketNames;
+            string prefix = Prefixes[(int)rarity][rng.Next(Prefixes[(int)rarity].Length)];
+            item.Name = prefix + " " + bases[rng.Next(bases.Length)];
+
+            switch (slot)
+            {
+                case ItemSlot.Weapon:
+                    item.Attack = Stat(rng, 4f + 2.5f * floor, mult);
+                    break;
+                case ItemSlot.Armor:
+                    item.Defense = Stat(rng, 2f + 1.5f * floor, mult);
+                    item.MaxHp = Stat(rng, 8f + 5f * floor, mult);
+                    break;
+                default:
+                    item.Crit = 0.01f + 0.015f * (int)rarity;
+                    item.Attack = Stat(rng, (1f + floor) * 0.5f, mult);
+                    item.MaxHp = Stat(rng, 5f + 3f * floor, mult);
+                    break;
+            }
+            return item;
+        }
+
+        static int Stat(Random rng, float baseValue, float mult)
+        {
+            double variance = 0.9 + 0.2 * rng.NextDouble();
+            return Math.Max(1, (int)Math.Round(baseValue * mult * variance));
+        }
+    }
+
+    /// <summary>What the player currently wears: one item per slot.</summary>
+    public sealed class Equipment
+    {
+        public readonly Item[] Slots = new Item[3];
+
+        public Item Get(ItemSlot slot) { return Slots[(int)slot]; }
+
+        /// <summary>Equips the item and returns whatever it replaced (or null).</summary>
+        public Item Equip(Item item)
+        {
+            var old = Slots[(int)item.Slot];
+            Slots[(int)item.Slot] = item;
+            return old;
+        }
+
+        public int BonusAttack { get { return Sum(i => i.Attack); } }
+        public int BonusDefense { get { return Sum(i => i.Defense); } }
+        public int BonusMaxHp { get { return Sum(i => i.MaxHp); } }
+
+        public float BonusCrit
+        {
+            get
+            {
+                float c = 0f;
+                foreach (var i in Slots) if (i != null) c += i.Crit;
+                return c;
+            }
+        }
+
+        int Sum(Func<Item, int> f)
+        {
+            int total = 0;
+            foreach (var i in Slots) if (i != null) total += f(i);
+            return total;
+        }
+    }
+
+    /// <summary>Backpack with a fixed capacity.</summary>
+    public sealed class Inventory
+    {
+        public const int Capacity = 20;
+        public readonly List<Item> Items = new List<Item>();
+
+        public bool IsFull { get { return Items.Count >= Capacity; } }
+
+        public bool Add(Item item)
+        {
+            if (item == null || IsFull) return false;
+            Items.Add(item);
+            return true;
+        }
+
+        public Item RemoveAt(int index)
+        {
+            if (index < 0 || index >= Items.Count) return null;
+            var it = Items[index];
+            Items.RemoveAt(index);
+            return it;
+        }
+    }
+}
