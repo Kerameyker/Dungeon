@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(TFM)</TargetFramework>
+    <LangVersion>9</LangVersion>
+    <Nullable>disable</Nullable>
+    <OutputType>Library</OutputType>
+    <DisableImplicitFrameworkReferences Condition="'$(TFM)'=='netstandard2.1'">false</DisableImplicitFrameworkReferences>
+    <AssemblyName>fullcheck</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn></NoWarn>
+    <DefineConstants>$(DefineConstants);$(ExtraDefines)</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Unity*.cs" />
+    <Compile Include="../../Assets/Scripts/Core/*.cs" />
+    <Compile Include="../../Assets/Scripts/Runtime/*.cs" />
+  </ItemGroup>
+</Project>

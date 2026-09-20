@@ -1,0 +1,3 @@
+<Project>
+  <PropertyGroup><TFM Condition="'$(TFM)'==''">net8.0</TFM></PropertyGroup>
+</Project>

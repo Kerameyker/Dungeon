@@ -8,7 +8,7 @@
 Enter a floor (procedural labyrinth of rooms and corridors) -> fight monsters -> gain XP and levels -> unlock and use sword skills -> find the boss room -> defeat the Floor Guardian -> a stairway appears -> press E -> next floor, harder.
 
 ## Player verbs
-- Move (WASD), sprint (Shift), dodge roll with invulnerability frames (Space).
+- Move (WASD), sprint (Shift), jump (Space), dodge roll with invulnerability frames (Ctrl or right mouse button).
 - Light attack: 3-hit combo (LMB). Timing window keeps the chain going.
 - Sword skills (keys 1-4), each with a cooldown and a distinct movement and hit pattern.
 - Interact (E) on the stairway; Esc frees the mouse.
@@ -26,6 +26,10 @@ Enter a floor (procedural labyrinth of rooms and corridors) -> fight monsters ->
 - **Bone Soldier:** balanced melee.
 - **Stone Golem:** slow, tanky, heavy hit with long telegraph.
 - **Floor Guardian (boss):** big HP pool, melee + ground slam with red telegraph ring.
+
+- **Skeleton Archer (floor 2+):** ranged, kites away when you are close, telegraphs then fires a dodgeable bolt.
+- **Crimson Knight (boss, even floors):** fast melee boss; every third attack is a telegraphed charge along a red lane.
+- **Elites (floor 2+, ~10%):** x1.25 size, x2.5 HP, x1.3 attack, x2.5 XP, always drop one Uncommon+ item.
 
 Enemies telegraph attacks (flash red) so dodge rolling is meaningful. Pathfinding is grid BFS on the dungeon layout.
 
@@ -45,7 +49,9 @@ Low-poly, all geometry from primitives; procedurally generated textures (noise +
 ## MVP scope (this build)
 Included: everything above, HUD, minimap, damage numbers, death and respawn, endless floors.
 Added in update 1: lock-on targeting (Q / MMB, Tab switches), gear and loot (5 rarities, 3 slots, backpack of 20, keyboard inventory on I).
-Not yet: NPC town/hub, save/load, story, gamepad.
+Added in update 2: procedural animation, Archer, Crimson Knight, elites, chests and healing shrines, dungeon decor, particles, URP post-processing.
+Added in update 3: hub town (healer, merchant, tower gate), gold economy, JSON save/load.
+Not yet: story dialogue, blacksmith, companion, weapon types, gamepad.
 
 ## Loot rules (see `Items.cs`)
 - Drop chance 30% per normal enemy; bosses drop 2 items, always Rare or better.
